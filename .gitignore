@@ -1,0 +1,13 @@
+# Ignore DB files
+*.db
+*.sqlite3
+database/
+*/database/app.db
+src/database/app.db
+
+# Ignore cache files
+__pycache__/
+*.pyc
+
+# Ignore system files
+*.DS_Store
