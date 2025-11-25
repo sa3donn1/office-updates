@@ -1,0 +1,388 @@
+{% extends "base.html" %}
+
+{% block title %}فهرس توكيلات المكتب - نظام الأرشيف المكتبي{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="mb-0">
+                <i class="bi bi-file-earmark-text me-3"></i>
+                فهرس التوكيلات
+            </h1>
+            <p class="mb-0 mt-2">إدارة التوكيلات وتتبع حركتها داخل المكتب</p>
+        </div>
+
+        {% if not employee_view %}
+        <div class="btn-group">
+          <a href="{{ url_for('power_of_attorney.add_power_of_attorney') }}" class="btn btn-light">
+              <i class="bi bi-plus-circle me-2"></i>
+              إضافة توكيل جديد
+          </a>
+
+          <button class="btn btn-light" id="openImportBtn" type="button">
+            <i class="bi bi-file-earmark-excel me-2"></i>
+            استيراد من Excel
+          </button>
+
+          <a href="{{ url_for('power_of_attorney.download_template') }}" class="btn btn-outline-light">
+            <i class="bi bi-download me-2"></i>
+            تحميل نموذج Excel
+          </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Search Bar -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('power_of_attorney.index') }}" class="d-flex align-items-center">
+            <div class="input-group me-3">
+                <span class="input-group-text">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text" 
+                       class="form-control" 
+                       name="search" 
+                       placeholder="البحث بالاسم أو الشركة..." 
+                       value="{{ search_query or '' }}"
+                       autocomplete="off">
+            </div>
+            
+            <button type="submit" class="btn btn-primary me-2">
+                <i class="bi bi-search me-1"></i>
+                بحث
+            </button>
+
+            {% if search_query %}
+            <a href="{{ url_for('power_of_attorney.index') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-x-circle me-1"></i>
+                مسح البحث
+            </a>
+            {% endif %}
+        </form>
+
+        {% if search_query %}
+        <div class="mt-2">
+            <small class="text-muted">
+                نتائج البحث عن: "<strong>{{ search_query }}</strong>"
+            </small>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-table me-2"></i>
+            جدول التوكيلات
+        </h5>
+    </div>
+
+    <div class="card-body">
+        {% if power_of_attorneys %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>رقم</th>
+                        <th>الاسم</th>
+                        <th>الشركة</th>
+                        <th>الحالة الحالية</th>
+                        <th>مع الموظف</th>
+                        <th>آخر حركة</th>
+                        <th>ملاحظات</th>
+                        {% if not employee_view %}
+                        <th class="text-end">الإجراءات</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for poa in power_of_attorneys %}
+                    {% set last = latest_movements.get(poa.id) %}
+
+                    <tr>
+                        <td><strong>{{ poa.sequence_number }}</strong></td>
+
+                        <td>{{ poa.name }}</td>
+
+                        <td>
+                            {% if poa.company_name %}
+                            <span class="badge bg-info">{{ poa.company_name }}</span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- الحالة -->
+                        <td>
+                            {% if last and not last.returned_at %}
+                                <span class="badge bg-warning text-dark"><i class="bi bi-person-fill me-1"></i>عند موظف</span>
+                            {% else %}
+                                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>راجع</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- الموظف الحالي -->
+                        <td>
+                            {% if last and not last.returned_at %}
+                                <span class="fw-bold">{{ last.employee.name }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- آخر حركة -->
+                        <td>
+                            {% if last %}
+                                {% if last.returned_at %}
+                                    <small class="text-muted">رجع: {{ last.returned_at.strftime('%Y-%m-%d') }}</small>
+                                {% else %}
+                                    <small class="text-muted">أُخذ: {{ last.taken_at.strftime('%Y-%m-%d') }}</small>
+                                {% endif %}
+                            {% else %}
+                                <small class="text-muted">{{ poa.created_at.strftime('%Y-%m-%d') }}</small>
+                            {% endif %}
+                        </td>
+
+                        <!-- ملاحظات -->
+                        <td>
+                            {% if poa.notes %}
+                            <small class="text-muted">{{ poa.notes[:40] }}{% if poa.notes|length > 40 %}...{% endif %}</small>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+
+                        {% if not employee_view %}
+                        <td class="text-end">
+                            <div class="btn-group">
+
+                                <!-- زر تاريخ الحركة -->
+                                <a href="{{ url_for('power_of_attorney.power_history', poa_id=poa.id) }}" 
+                                   class="btn btn-outline-info btn-sm" title="سجل الحركة">
+                                    <i class="bi bi-clock-history"></i>
+                                </a>
+
+                                {% if last and not last.returned_at %}
+                                <!-- استلام -->
+                                <button class="btn btn-outline-success btn-sm"
+                                        onclick="openReturnModal('{{ poa.id }}', '{{ last.employee.name }}')">
+                                    <i class="bi bi-box-arrow-in-down"></i>
+                                </button>
+                                {% else %}
+                                <!-- تسليم -->
+                                <button class="btn btn-outline-primary btn-sm"
+                                        onclick="openAssignModal('{{ poa.id }}')">
+                                    <i class="bi bi-box-arrow-up"></i>
+                                </button>
+                                {% endif %}
+
+                                <!-- تعديل -->
+                                <a href="{{ url_for('power_of_attorney.edit_power_of_attorney', poa_id=poa.id) }}" 
+                                   class="btn btn-outline-warning btn-sm">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+
+                                <!-- حذف -->
+                                <form action="{{ url_for('power_of_attorney.delete_power_of_attorney', poa_id=poa.id) }}" 
+                                      method="post"
+                                      onsubmit="return confirm('هل أنت متأكد من الحذف؟')">
+                                    <button class="btn btn-outline-danger btn-sm">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+
+                            </div>
+                        </td>
+                        {% endif %}
+
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-file-earmark-text text-muted" style="font-size: 4rem;"></i>
+            <h5 class="mt-3 text-muted">لا توجد توكيلات</h5>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+
+
+<!-- -------------------------------------------------------- -->
+<!-- ---------------------  MODALS  -------------------------- -->
+<!-- -------------------------------------------------------- -->
+
+<!-- Assign Modal -->
+<div class="modal fade" id="assignModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form method="POST" action="{{ url_for('power_of_attorney.assign_power_of_attorney') }}" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">تسليم التوكيل لموظف</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <input type="hidden" name="power_id" id="assign_power_id">
+
+        <label class="form-label">اختر الموظف</label>
+        <select name="employee_id" class="form-select" required>
+          {% for emp in employees %}
+          <option value="{{ emp.id }}">{{ emp.name }}</option>
+          {% endfor %}
+        </select>
+
+        <label class="form-label mt-3">ملاحظات (اختياري)</label>
+        <textarea name="notes" class="form-control" rows="3"></textarea>
+      </div>
+
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary">تأكيد التسليم</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+<!-- Return Modal -->
+<div class="modal fade" id="returnModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form method="POST" action="{{ url_for('power_of_attorney.return_power_of_attorney') }}" class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">استلام التوكيل من الموظف</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <input type="hidden" name="power_id" id="return_power_id">
+
+        <p id="return_employee_info" class="fw-bold"></p>
+
+        <label class="form-label mt-3">ملاحظات (اختياري)</label>
+        <textarea name="notes" class="form-control" rows="3"></textarea>
+      </div>
+
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-success">تأكيد الاستلام</button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal fade" id="importModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="importForm" enctype="multipart/form-data">
+        <div class="modal-header">
+          <h5 class="modal-title">استيراد توكيلات من Excel</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <div id="importAlert" style="display:none;"></div>
+
+          <label class="form-label">اختر ملف Excel (.xlsx أو .xls)</label>
+          <input type="file" name="file" id="importFile" accept=".xlsx,.xls" class="form-control" required>
+
+          <small class="text-muted d-block mt-2">
+            الملف يجب أن يحتوي أعمدة: <strong>serial, name, company, status, notes</strong>
+          </small>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+          <button type="submit" class="btn btn-primary" id="doImportBtn">استيراد الآن</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+function openAssignModal(powerId) {
+    document.getElementById("assign_power_id").value = powerId;
+    var modal = new bootstrap.Modal(document.getElementById("assignModal"));
+    modal.show();
+}
+
+function openReturnModal(powerId, employeeName) {
+    document.getElementById("return_power_id").value = powerId;
+    document.getElementById("return_employee_info").innerText =
+        "استلام التوكيل من الموظف: " + employeeName;
+    var modal = new bootstrap.Modal(document.getElementById("returnModal"));
+    modal.show();
+}
+
+// Import modal handlers
+document.getElementById('openImportBtn').addEventListener('click', function(){
+    var modal = new bootstrap.Modal(document.getElementById('importModal'));
+    modal.show();
+    document.getElementById('importAlert').style.display = 'none';
+    document.getElementById('importAlert').innerHTML = '';
+    document.getElementById('importFile').value = '';
+});
+
+document.getElementById('importForm').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const fileInput = document.getElementById('importFile');
+    if(!fileInput.files.length) {
+        alert('اختر ملفاً أولاً');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+
+    const btn = document.getElementById('doImportBtn');
+    btn.disabled = true;
+    const originalText = btn.textContent;
+    btn.textContent = 'جاري الاستيراد...';
+
+    try {
+        const resp = await fetch('{{ url_for("power_of_attorney.import_delegations") }}', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await resp.json();
+        const alertDiv = document.getElementById('importAlert');
+        alertDiv.style.display = 'block';
+        
+        if(resp.ok){
+            alertDiv.className = 'alert alert-success';
+            alertDiv.innerHTML = '<strong>✓ تم إضافة ' + data.added + ' توكيل(ات) بنجاح.</strong>';
+            if(data.errors && data.errors.length){
+                alertDiv.className = 'alert alert-warning';
+                alertDiv.innerHTML += '<br><br><strong>ملاحظات:</strong><ul class="mb-0">' + data.errors.map(e => '<li>' + e + '</li>').join('') + '</ul>';
+            } else {
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            }
+        } else {
+            alertDiv.className = 'alert alert-danger';
+            alertDiv.innerHTML = '<strong>✗ خطأ:</strong> ' + (data.error || 'حدث خطأ أثناء الاستيراد');
+        }
+    } catch(err){
+        alert('فشل الاتصال بالخادم: ' + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+    }
+});
+</script>
+
+{% endblock %}

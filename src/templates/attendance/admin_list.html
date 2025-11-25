@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة الحضور والانصراف - نظام الأرشيف المكتبي{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="mb-0">
+        <i class="bi bi-clock-history me-3"></i>
+        إدارة الحضور والانصراف
+    </h1>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ "danger" if category == "error" else category }}" role="alert">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<!-- شريط البحث والفلترة -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-funnel me-2"></i>
+            الفلترة والبحث
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="GET" class="row g-3" id="filter-form">
+            <div class="col-md-4">
+                <label for="employee-filter" class="form-label">اسم الموظف</label>
+                <select id="employee-filter" name="employee" class="form-select">
+                    <option value="">-- اختر موظفاً --</option>
+                    {% for emp in employees %}
+                        <option value="{{ emp.name }}" {% if current_employee == emp.name %}selected{% endif %}>
+                            {{ emp.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-4">
+                <label for="date-filter" class="form-label">التاريخ</label>
+                <input type="date" id="date-filter" name="date" class="form-control" 
+                       value="{{ current_date }}">
+            </div>
+            
+            <div class="col-md-4 d-flex align-items-end gap-2">
+                <button type="submit" class="btn btn-primary flex-grow-1">
+                    <i class="bi bi-search me-2"></i>
+                    بحث
+                </button>
+                <a href="{{ url_for('attendance.admin_list') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-clockwise me-2"></i>
+                    مسح
+                </a>
+                <a href="{{ url_for('attendance.export_excel') }}" class="btn btn-success" 
+                   {% if current_employee %}data-employee="{{ current_employee }}"{% endif %}
+                   {% if current_date %}data-date="{{ current_date }}"{% endif %}
+                   onclick="exportExcel(event)">
+                    <i class="bi bi-download me-2"></i>
+                    تحميل Excel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- جدول السجلات -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-table me-2"></i>
+            سجلات الحضور والانصراف
+        </h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover table-striped mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 5%">#</th>
+                    <th style="width: 20%">اسم الموظف</th>
+                    <th style="width: 12%">التاريخ</th>
+                    <th style="width: 12%">وقت الحضور</th>
+                    <th style="width: 12%">وقت الانصراف</th>
+                    <th style="width: 10%">ساعات العمل</th>
+                    <th style="width: 19%">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if attendance_records.items %}
+                    {% for record in attendance_records.items %}
+                        <tr>
+                            <td>{{ loop.index + (attendance_records.page - 1) * 20 }}</td>
+                            <td>
+                                <strong>{{ record.employee.name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ record.employee.employee_id }}</small>
+                            </td>
+                            <td>{{ record.date.strftime("%d/%m/%Y") }}</td>
+                            <td>
+                                {% if record.check_in %}
+                                    <span class="badge bg-success">{{ record.check_in.strftime("%H:%M:%S") }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if record.check_out %}
+                                    <span class="badge bg-danger">{{ record.check_out.strftime("%H:%M:%S") }}</span>
+                                {% else %}
+                                    <span class="badge bg-warning">لم يسجل</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if record.get_working_hours() %}
+                                    <strong>{{ record.get_working_hours() }}</strong> ساعة
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('attendance.edit_attendance', attendance_id=record.id) }}" 
+                                   class="btn btn-sm btn-warning" title="تعديل">
+                                    <i class="bi bi-pencil-square"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('attendance.delete_attendance', attendance_id=record.id) }}"
+                                      style="display: inline;" 
+                                      onsubmit="return confirm('هل أنت متأكد من حذف هذا السجل؟');">
+                                    <button type="submit" class="btn btn-sm btn-danger" title="حذف">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox me-2"></i>
+                            لا توجد سجلات متطابقة
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    {% if attendance_records.pages > 1 %}
+        <nav class="d-flex justify-content-center p-3" aria-label="Page navigation">
+            <ul class="pagination mb-0">
+                {% if attendance_records.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('attendance.admin_list', page=attendance_records.prev_num, employee=current_employee, date=current_date) }}">
+                            السابق
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">السابق</span>
+                    </li>
+                {% endif %}
+                
+                {% for page_num in attendance_records.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num == attendance_records.page %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('attendance.admin_list', page=page_num, employee=current_employee, date=current_date) }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+                
+                {% if attendance_records.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('attendance.admin_list', page=attendance_records.next_num, employee=current_employee, date=current_date) }}">
+                            التالي
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">التالي</span>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+</div>
+
+<script>
+    function exportExcel(event) {
+        event.preventDefault();
+        
+        const employee = document.getElementById('employee-filter').value;
+        const date = document.getElementById('date-filter').value;
+        
+        let url = '{{ url_for("attendance.export_excel") }}?';
+        if (employee) url += `employee=${encodeURIComponent(employee)}&`;
+        if (date) url += `date=${date}&`;
+        
+        window.location.href = url;
+    }
+</script>
+
+{% endblock %}

@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}تعديل العميل - نظام الأرشيف المكتبي{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="mb-0">
+                <i class="bi bi-pencil me-3"></i>
+                تعديل بيانات العميل
+            </h1>
+            <p class="mb-0 mt-2">تعديل بيانات العميل: {{ client.client_name }}</p>
+        </div>
+        <a href="{{ url_for("clients.index") }}" class="btn btn-light">
+            <i class="bi bi-arrow-right me-2"></i>
+            العودة للقائمة
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-form me-2"></i>
+            بيانات العميل
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="POST">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="name" class="form-label">اسم العميل <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="name" name="name" value="{{ client.name }}" required>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="client_type" class="form-label">نوع العميل <span class="text-danger">*</span></label>
+                    <select class="form-select" id="client_type" name="client_type" required>
+                        <option value="">اختر نوع العميل</option>
+                        <option value="individual" {% if client.client_type == "individual" %}selected{% endif %}>فرد</option>
+                        <option value="company" {% if client.client_type == "company" %}selected{% endif %}>شركة</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="platform_registration_number" class="form-label">رقم التسجيل بالمنصة <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="platform_registration_number" name="platform_registration_number" value="{{ client.platform_registration_number }}" required>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="password" class="form-label">كلمة المرور <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="password" name="password" value="{{ client.password }}" required>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="tax_office" class="form-label">المأمورية <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="tax_office" name="tax_office" value="{{ client.tax_office }}" required>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="national_id" class="form-label">الرقم القومي <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="national_id" name="national_id" value="{{ client.national_id }}" required>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="tax_registration_number" class="form-label">رقم التسجيل الضريبي</label>
+                    <input type="text" class="form-control" id="tax_registration_number" name="tax_registration_number" value="{{ client.tax_registration_number or '' }}" placeholder="اختياري">
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="declaration_status" class="form-label">حالة الإقرار</label>
+                    <select class="form-select" id="declaration_status" name="declaration_status">
+                        <option value="pending" {% if client.declaration_status == "pending" %}selected{% endif %}>معلق</option>
+                        <option value="in_progress" {% if client.declaration_status == "in_progress" %}selected{% endif %}>قيد التنفيذ</option>
+                        <option value="completed" {% if client.declaration_status == "completed" %}selected{% endif %}>مكتمل</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row">
+                {% if not employee_view %}
+                <div class="col-md-6 mb-3">
+                    <label for="employee_id" class="form-label">الموظف المسؤول</label>
+                    <select class="form-select" id="employee_id" name="employee_id">
+                        <option value="">اختر الموظف المسؤول</option>
+                        {% for employee in employees %}
+                        <option value="{{ employee.id }}" {% if client.employee_id == employee.id %}selected{% endif %}>{{ employee.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+            </div>
+            
+            {% if not employee_view %}
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle me-2"></i>
+                    حفظ التعديلات
+                </button>
+                <a href="{{ url_for("clients.index") }}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle me-2"></i>
+                    إلغاء
+                </a>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+{% endblock %}
+

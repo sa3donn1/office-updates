@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}سجل حركة التوكيل - {{ poa.name or poa.sequence_number }}{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <div>
+      <h5 class="mb-0">سجل حركة التوكيل</h5>
+      <small class="text-muted">توكيل: {{ poa.name or ('#' ~ poa.sequence_number) }}</small>
+    </div>
+    <div>
+      <a href="{{ url_for('power_of_attorney.index') }}" class="btn btn-sm btn-outline-light">العودة للفهرس</a>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="mb-3 d-flex gap-2">
+      <input id="filter" class="form-control form-control-sm" placeholder="ابحث في السجل (ملاحظة / اسم الموظف)" />
+      <select id="showFilter" class="form-select form-select-sm" style="max-width:220px">
+        <option value="all">عرض الكل</option>
+        <option value="open">المرسلة حالياً</option>
+        <option value="returned">المستلمة</option>
+      </select>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-striped table-sm" id="movementsTable">
+        <thead>
+          <tr>
+            <th>موظف</th>
+            <th>تاريخ الاستلام</th>
+            <th>تاريخ الإرجاع</th>
+            <th>ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in movements %}
+          <tr data-open="{{ 'true' if not m.returned_at else 'false' }}">
+            <td>{{ (m.employee.name if m.employee else (m.employee_id or '---')) }}</td>
+            <td>{{ m.taken_at.strftime('%Y-%m-%d %H:%M') if m.taken_at else '-' }}</td>
+            <td>{{ m.returned_at.strftime('%Y-%m-%d %H:%M') if m.returned_at else '-' }}</td>
+            <td style="white-space:pre-wrap">{{ m.notes or '' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Client-side filtering and periodic refresh
+  const filterInput = document.getElementById('filter');
+  const showFilter = document.getElementById('showFilter');
+  const table = document.getElementById('movementsTable').getElementsByTagName('tbody')[0];
+
+  function applyFilter(){
+    const q = filterInput.value.trim().toLowerCase();
+    const show = showFilter.value;
+    for(const row of table.rows){
+      const txt = row.innerText.toLowerCase();
+      const isOpen = row.dataset.open === 'true';
+      let visible = true;
+      if(q && txt.indexOf(q) === -1) visible = false;
+      if(show === 'open' && !isOpen) visible = false;
+      if(show === 'returned' && isOpen) visible = false;
+      row.style.display = visible ? '' : 'none';
+    }
+  }
+
+  filterInput.addEventListener('input', applyFilter);
+  showFilter.addEventListener('change', applyFilter);
+
+  // Optional: refresh data every 30s
+  async function refreshData(){
+    try{
+      const resp = await fetch('{{ url_for("power_of_attorney.get_history_api", poa_id=poa.id) }}');
+      if(!resp.ok) return;
+      const data = await resp.json();
+      // replace table body
+      table.innerHTML = '';
+      for(const m of data.movements){
+        const tr = document.createElement('tr');
+        tr.dataset.open = !m.returned_at;
+        tr.innerHTML = `
+          <td>${m.employee_name || m.employee_id || '---'}</td>
+          <td>${m.taken_at || '-'}</td>
+          <td>${m.returned_at || '-'}</td>
+          <td style="white-space:pre-wrap">${(m.notes||'').replace(/\n/g,'<br>')}</td>`;
+        table.appendChild(tr);
+      }
+      applyFilter();
+    }catch(e){
+      // ignore
+    }
+  }
+
+  // start periodic refresh
+  setInterval(refreshData, 30000);
+</script>
+
+{% endblock %}

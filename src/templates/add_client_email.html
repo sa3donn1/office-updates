@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة إيميل جديد - {{ client.name }} - نظام الأرشيف المكتبي{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="mb-0">
+                <i class="bi bi-envelope-plus me-3"></i>
+                إضافة إيميل جديد
+            </h1>
+            <p class="mb-0 mt-2">إضافة إيميل وكلمة مرور جديدة للعميل: <strong>{{ client.name }}</strong></p>
+        </div>
+        <a href="{{ url_for('clients.client_emails', client_id=client.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>
+            العودة لإيميلات العميل
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-envelope me-2"></i>
+                    بيانات الإيميل الجديد
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">
+                                    <i class="bi bi-envelope me-1"></i>
+                                    عنوان الإيميل <span class="text-danger">*</span>
+                                </label>
+                                <input type="email" class="form-control" id="email" name="email" required 
+                                       placeholder="example@domain.com">
+                                <div class="form-text">أدخل عنوان الإيميل الصحيح</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="password" class="form-label">
+                                    <i class="bi bi-key me-1"></i>
+                                    كلمة المرور <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="password" name="password" required 
+                                           placeholder="أدخل كلمة المرور">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility()">
+                                        <i class="bi bi-eye" id="toggleIcon"></i>
+                                    </button>
+                                </div>
+                                <div class="form-text">كلمة مرور الإيميل</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">
+                            <i class="bi bi-tag me-1"></i>
+                            الوصف (اختياري)
+                        </label>
+                        <input type="text" class="form-control" id="description" name="description" 
+                               placeholder="مثال: إيميل الضرائب، إيميل التأمينات، إيميل شخصي">
+                        <div class="form-text">وصف مختصر لنوع أو استخدام هذا الإيميل</div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('clients.client_emails', client_id=client.id) }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle me-2"></i>
+                            إلغاء
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-2"></i>
+                            إضافة الإيميل
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function togglePasswordVisibility() {
+    const passwordField = document.getElementById('password');
+    const toggleIcon = document.getElementById('toggleIcon');
+    
+    if (passwordField.type === 'password') {
+        passwordField.type = 'text';
+        toggleIcon.className = 'bi bi-eye-slash';
+    } else {
+        passwordField.type = 'password';
+        toggleIcon.className = 'bi bi-eye';
+    }
+}
+</script>
+{% endblock %}
+

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}تعديل الموظف - نظام الأرشيف المكتبي{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="mb-0">
+                <i class="bi bi-pencil me-3"></i>
+                تعديل بيانات الموظف
+            </h1>
+            <p class="mb-0 mt-2">تعديل بيانات الموظف: {{ employee.name }}</p>
+        </div>
+        {% if not employee_view %}
+        <a href="{{ url_for("employees.index") }}" class="btn btn-light">
+            <i class="bi bi-arrow-right me-2"></i>
+            العودة للقائمة
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-form me-2"></i>
+            بيانات الموظف
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="POST">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="employee_id" class="form-label">رقم الموظف <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="employee_id" name="employee_id" value="{{ employee.employee_id }}" required>
+                    <div class="form-text">رقم تعريف فريد للموظف</div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="name" class="form-label">اسم الموظف <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="name" name="name" value="{{ employee.name }}" required>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="username" class="form-label">اسم المستخدم <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="username" name="username" value="{{ employee.username }}" required>
+                    <div class="form-text">اسم المستخدم لتسجيل الدخول</div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="password" class="form-label">كلمة المرور الجديدة</label>
+                    <input type="password" class="form-control" id="password" name="password">
+                    <div class="form-text">اتركها فارغة إذا كنت لا تريد تغيير كلمة المرور</div>
+                </div>
+            </div>
+            
+            {% if not employee_view %}
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle me-2"></i>
+                    حفظ التعديلات
+                </button>
+                <a href="{{ url_for("employees.index") }}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle me-2"></i>
+                    إلغاء
+                </a>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+{% endblock %}

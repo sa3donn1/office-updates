@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة مهمة جديدة - نظام الأرشيف المكتبي{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="mb-0">
+                <i class="bi bi-plus-square me-3"></i>
+                إضافة مهمة جديدة
+            </h1>
+            <p class="mb-0 mt-2">إضافة مهمة جديدة للموظفين</p>
+        </div>
+        <a href="{{ url_for('tasks.index') }}" class="btn btn-light">
+            <i class="bi bi-arrow-right me-2"></i>
+            العودة للقائمة
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-form me-2"></i>
+            بيانات المهمة
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="POST">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="company_name" class="form-label">اسم الشركة <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="company_name" name="company_name" required>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="service_type" class="form-label">نوع الخدمة <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="service_type" name="service_type" required>
+                    <div class="form-text">مثال: إقرار ضريبي، تسجيل شركة، إلخ</div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="employee_id" class="form-label">الموظف المسؤول <span class="text-danger">*</span></label>
+                    <select class="form-select" id="employee_id" name="employee_id" required>
+                        <option value="">اختر الموظف المسؤول</option>
+                        {% for employee in employees %}
+                        <option value="{{ employee.id }}">{{ employee.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle me-2"></i>
+                    حفظ المهمة
+                </button>
+                <a href="{{ url_for('tasks.index') }}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle me-2"></i>
+                    إلغاء
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

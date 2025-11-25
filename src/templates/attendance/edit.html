@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}تعديل سجل الحضور - نظام الأرشيف المكتبي{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="mb-0">
+        <i class="bi bi-pencil-square me-3"></i>
+        تعديل سجل الحضور
+    </h1>
+    <p class="mb-0 mt-2">تعديل سجل حضور: <strong>{{ attendance.employee.name }}</strong> - {{ attendance.date.strftime("%d/%m/%Y") }}</p>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ "danger" if category == "error" else category }}" role="alert">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('attendance.edit_attendance', attendance_id=attendance.id) }}">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="employee-name" class="form-label">اسم الموظف</label>
+                            <input type="text" class="form-control" id="employee-name" 
+                                   value="{{ attendance.employee.name }}" disabled>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="date" class="form-label">التاريخ</label>
+                            <input type="text" class="form-control" id="date" 
+                                   value="{{ attendance.date.strftime('%d/%m/%Y') }}" disabled>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="check_in" class="form-label">وقت الحضور</label>
+                            <input type="time" class="form-control" id="check_in" name="check_in"
+                                   value="{% if attendance.check_in %}{{ attendance.check_in.strftime('%H:%M') }}{% endif %}"
+                                   required>
+                            <small class="text-muted">
+                                الوقت الحالي: 
+                                {% if attendance.check_in %}
+                                    {{ attendance.check_in.strftime('%H:%M:%S') }}
+                                {% else %}
+                                    لم يتم التسجيل
+                                {% endif %}
+                            </small>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="check_out" class="form-label">وقت الانصراف</label>
+                            <input type="time" class="form-control" id="check_out" name="check_out"
+                                   value="{% if attendance.check_out %}{{ attendance.check_out.strftime('%H:%M') }}{% endif %}">
+                            <small class="text-muted">
+                                الوقت الحالي: 
+                                {% if attendance.check_out %}
+                                    {{ attendance.check_out.strftime('%H:%M:%S') }}
+                                {% else %}
+                                    لم يتم التسجيل
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">ملاحظات</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="4">{{ attendance.notes or '' }}</textarea>
+                    </div>
+                    
+                    {% if attendance.get_working_hours() %}
+                        <div class="alert alert-info mb-3">
+                            <strong>ساعات العمل المحسوبة:</strong> {{ attendance.get_working_hours() }} ساعة
+                        </div>
+                    {% endif %}
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-2"></i>
+                            حفظ التعديلات
+                        </button>
+                        <a href="{{ url_for('attendance.admin_list') }}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>
+                            إلغاء
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">معلومات المتابعة</h5>
+            </div>
+            <div class="card-body small">
+                <p>
+                    <strong>رقم الموظف:</strong><br>
+                    {{ attendance.employee.employee_id }}
+                </p>
+                <p>
+                    <strong>حالة التسجيل:</strong><br>
+                    {% if attendance.check_in and attendance.check_out %}
+                        <span class="badge bg-success">مكتمل</span>
+                    {% elif attendance.check_in %}
+                        <span class="badge bg-warning">حضور فقط</span>
+                    {% else %}
+                        <span class="badge bg-danger">لم يتم التسجيل</span>
+                    {% endif %}
+                </p>
+                <hr>
+                <p class="text-muted mb-0">
+                    <strong>نصيحة:</strong><br>
+                    تأكد من صحة الأوقات قبل الحفظ، فقد تؤثر على حسابات الراتب.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

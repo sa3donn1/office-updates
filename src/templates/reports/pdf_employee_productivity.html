@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تقرير إنتاجية الموظفين</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            direction: rtl;
+            text-align: right;
+            margin: 0;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 20px;
+        }
+        .header h1 {
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+        .generated-at {
+            text-align: left;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #495057;
+        }
+        .stats-row {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+        .stat-box {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .rating-excellent { color: #28a745; }
+        .rating-good { color: #ffc107; }
+        .rating-average { color: #17a2b8; }
+        .rating-needs-improvement { color: #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>تقرير إنتاجية الموظفين</h1>
+        <p>نظام الأرشيف المكتبي</p>
+    </div>
+    
+    <div class="generated-at">
+        تم إنشاء التقرير في: {{ generated_at }}
+    </div>
+
+    <div class="stats-row">
+        <div class="stat-box">
+            <div class="stat-number">{{ employees_data|length }}</div>
+            <div>إجمالي الموظفين</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">{{ employees_data|sum(attribute='completed_tasks') }}</div>
+            <div>المهام المكتملة</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">{{ employees_data|sum(attribute='total_tasks') }}</div>
+            <div>إجمالي المهام</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">{{ employees_data|sum(attribute='clients_count') }}</div>
+            <div>إجمالي العملاء</div>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>اسم الموظف</th>
+                <th>رقم الموظف</th>
+                <th>المهام المكتملة</th>
+                <th>إجمالي المهام</th>
+                <th>عدد العملاء</th>
+                <th>نسبة الإنجاز</th>
+                <th>التقييم</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for data in employees_data %}
+            <tr>
+                <td><strong>{{ data.employee.name }}</strong></td>
+                <td>{{ data.employee.employee_id }}</td>
+                <td>{{ data.completed_tasks }}</td>
+                <td>{{ data.total_tasks }}</td>
+                <td>{{ data.clients_count }}</td>
+                <td>{{ data.completion_rate }}%</td>
+                <td>
+                    {% if data.completion_rate >= 80 %}
+                        <span class="rating-excellent">ممتاز</span>
+                    {% elif data.completion_rate >= 60 %}
+                        <span class="rating-good">جيد</span>
+                    {% elif data.completion_rate >= 40 %}
+                        <span class="rating-average">متوسط</span>
+                    {% else %}
+                        <span class="rating-needs-improvement">يحتاج تحسين</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div style="margin-top: 30px; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
+        <h3>ملاحظات:</h3>
+        <ul>
+            <li>التقييم "ممتاز": نسبة إنجاز 80% أو أكثر</li>
+            <li>التقييم "جيد": نسبة إنجاز من 60% إلى 79%</li>
+            <li>التقييم "متوسط": نسبة إنجاز من 40% إلى 59%</li>
+            <li>التقييم "يحتاج تحسين": نسبة إنجاز أقل من 40%</li>
+        </ul>
+    </div>
+</body>
+</html>
+

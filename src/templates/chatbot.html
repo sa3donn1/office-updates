@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}مساعد النظام{% endblock %}
+
+{% block content %}
+<div class="card p-3">
+  <h4>مساعد (ChatBot)</h4>
+  <div id="conv" style="border:1px solid #ddd;padding:10px;height:60vh;overflow:auto;background:#fafafa;margin-bottom:1rem"></div>
+
+  <div class="d-flex gap-2">
+    <textarea id="q" class="form-control" rows="2" placeholder="اكتب سؤالك هنا..."></textarea>
+    <button id="send" class="btn btn-primary">أرسل</button>
+  </div>
+</div>
+
+<script>
+  const conv = document.getElementById('conv');
+  const q = document.getElementById('q');
+  const send = document.getElementById('send');
+
+  function addMessage(text, cls){
+    const el = document.createElement('div');
+    el.className = 'p-2 mb-2 rounded ' + (cls === 'user' ? 'bg-info text-white ms-auto' : 'bg-light me-auto');
+    el.style.maxWidth = '80%';
+    el.textContent = text;
+    conv.appendChild(el);
+    conv.scrollTop = conv.scrollHeight;
+  }
+
+  async function ask(question){
+    addMessage(question, 'user');
+    try {
+      const res = await fetch('/chatbot/ask', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({question})
+      });
+      const data = await res.json();
+      if(res.ok && data.response){
+        addMessage(data.response, 'bot');
+      } else {
+        addMessage((data.error || 'خطأ في الاستجابة'), 'bot');
+      }
+    } catch (err) {
+      addMessage('فشل الاتصال بالخادم', 'bot');
+    }
+  }
+
+  send.addEventListener('click', ()=>{
+    const text = q.value.trim();
+    if(!text) return;
+    ask(text);
+    q.value = '';
+    q.focus();
+  });
+
+  q.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter' && !e.shiftKey){
+      e.preventDefault();
+      send.click();
+    }
+  });
+</script>
+{% endblock %}

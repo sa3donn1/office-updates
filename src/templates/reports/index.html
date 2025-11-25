@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}التقارير - نظام الأرشيف المكتبي{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="mb-0">
+                <i class="bi bi-graph-up me-3"></i>
+                التقارير والإحصائيات
+            </h1>
+            <p class="mb-0 mt-2">عرض وتحليل بيانات النظام</p>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- لوحة التحكم -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-speedometer2 text-primary" style="font-size: 3rem;"></i>
+                <h5 class="card-title mt-3">لوحة التحكم</h5>
+                <p class="card-text">إحصائيات سريعة ورسوم بيانية تفاعلية</p>
+                <a href="{{ url_for('reports.dashboard') }}" class="btn btn-primary">
+                    <i class="bi bi-eye me-2"></i>
+                    عرض لوحة التحكم
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- تقرير إنتاجية الموظفين -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-person-badge text-success" style="font-size: 3rem;"></i>
+                <h5 class="card-title mt-3">تقرير إنتاجية الموظفين</h5>
+                <p class="card-text">عرض المهام المكتملة وعدد العملاء لكل موظف</p>
+                <a href="{{ url_for('reports.employee_productivity') }}" class="btn btn-success">
+                    <i class="bi bi-eye me-2"></i>
+                    عرض التقرير
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- تقرير المهام حسب الموظف -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-check2-square text-info" style="font-size: 3rem;"></i>
+                <h5 class="card-title mt-3">المهام حسب الموظف</h5>
+                <p class="card-text">عرض مهام موظف محدد مصنفة حسب الحالة</p>
+                <a href="{{ url_for('reports.tasks_by_employee') }}" class="btn btn-info">
+                    <i class="bi bi-eye me-2"></i>
+                    عرض التقرير
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- تقرير المهام المتأخرة -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-exclamation-triangle text-warning" style="font-size: 3rem;"></i>
+                <h5 class="card-title mt-3">المهام المتأخرة</h5>
+                <p class="card-text">المهام التي لم تكتمل منذ أكثر من 30 يوماً</p>
+                <a href="{{ url_for('reports.overdue_tasks') }}" class="btn btn-warning">
+                    <i class="bi bi-eye me-2"></i>
+                    عرض التقرير
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-info-circle me-2"></i>
+            معلومات التقارير
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6><i class="bi bi-check-circle text-success me-2"></i>الميزات المتاحة:</h6>
+                <ul class="list-unstyled">
+                    <li><i class="bi bi-arrow-left me-2"></i>عرض تفاعلي للبيانات</li>
+                    <li><i class="bi bi-arrow-left me-2"></i>رسوم بيانية ملونة</li>
+                    <li><i class="bi bi-arrow-left me-2"></i>فلاتر زمنية (يومي، أسبوعي، شهري)</li>
+                    <li><i class="bi bi-arrow-left me-2"></i>تصدير إلى Excel و PDF</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6><i class="bi bi-shield-check text-primary me-2"></i>صلاحيات الوصول:</h6>
+                <ul class="list-unstyled">
+                    <li><i class="bi bi-arrow-left me-2"></i>متاحة للمديرين والموظفين</li>
+                    <li><i class="bi bi-arrow-left me-2"></i>بيانات محدثة في الوقت الفعلي</li>
+                    <li><i class="bi bi-arrow-left me-2"></i>واجهة سهلة الاستخدام</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

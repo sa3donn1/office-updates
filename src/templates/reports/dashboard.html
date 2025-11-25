@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block title %}لوحة التحكم - نظام الأرشيف المكتبي{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="mb-0">
+                <i class="bi bi-speedometer2 me-3"></i>
+                لوحة التحكم
+            </h1>
+            <p class="mb-0 mt-2">إحصائيات سريعة ورسوم بيانية تفاعلية</p>
+        </div>
+        <a href="{{ url_for('reports.index') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-right me-2"></i>
+            العودة للتقارير
+        </a>
+    </div>
+</div>
+
+<!-- فلاتر الفترة الزمنية -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h6 class="mb-0">
+                    <i class="bi bi-calendar3 me-2"></i>
+                    فلتر الفترة الزمنية:
+                </h6>
+            </div>
+            <div class="col-md-6">
+                <div class="btn-group w-100" role="group">
+                    <a href="{{ url_for('reports.dashboard', period='all') }}" 
+                       class="btn {% if current_period == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                        الكل
+                    </a>
+                    <a href="{{ url_for('reports.dashboard', period='today') }}" 
+                       class="btn {% if current_period == 'today' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                        اليوم
+                    </a>
+                    <a href="{{ url_for('reports.dashboard', period='week') }}" 
+                       class="btn {% if current_period == 'week' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                        الأسبوع
+                    </a>
+                    <a href="{{ url_for('reports.dashboard', period='month') }}" 
+                       class="btn {% if current_period == 'month' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                        الشهر
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- الإحصائيات السريعة -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <i class="bi bi-people fs-1"></i>
+                <h4>{{ stats.total_clients }}</h4>
+                <p class="mb-0">إجمالي العملاء</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <i class="bi bi-list-task fs-1"></i>
+                <h4>{{ stats.total_tasks }}</h4>
+                <p class="mb-0">إجمالي المهام</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <i class="bi bi-check-circle fs-1"></i>
+                <h4>{{ stats.completed_tasks }}</h4>
+                <p class="mb-0">المهام المكتملة</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body text-center">
+                <i class="bi bi-exclamation-triangle fs-1"></i>
+                <h4>{{ stats.overdue_tasks }}</h4>
+                <p class="mb-0">المهام المتأخرة</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- الرسم البياني الدائري -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-pie-chart me-2"></i>
+                    توزيع المهام حسب الحالة
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="pieChart" width="400" height="400"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- الرسم البياني الشريطي -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-bar-chart me-2"></i>
+                    المهام المكتملة لكل موظف
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="barChart" width="400" height="400"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- معلومات إضافية -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    معلومات الفترة المحددة
+                </h5>
+            </div>
+            <div class="card-body">
+                <p><strong>الفترة المحددة:</strong> 
+                    {% if current_period == 'all' %}جميع البيانات
+                    {% elif current_period == 'today' %}اليوم
+                    {% elif current_period == 'week' %}الأسبوع الماضي
+                    {% elif current_period == 'month' %}الشهر الماضي
+                    {% endif %}
+                </p>
+                <p><strong>نسبة الإنجاز:</strong> 
+                    {% if stats.total_tasks > 0 %}
+                        {{ ((stats.completed_tasks / stats.total_tasks) * 100)|round(1) }}%
+                    {% else %}
+                        0%
+                    {% endif %}
+                </p>
+                <p><strong>المهام المعلقة:</strong> {{ stats.total_tasks - stats.completed_tasks }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-trophy me-2"></i>
+                    أفضل الموظفين
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if bar_data %}
+                    {% for employee in bar_data[:3] %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>{{ employee.name }}</span>
+                        <span class="badge bg-success">{{ employee.completed_tasks }} مهمة</span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">لا توجد بيانات متاحة</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function( ) {
+    // انتظار تحميل كامل للصفحة
+    setTimeout(function() {
+        initializeCharts();
+    }, 100);
+});
+
+function initializeCharts() {
+    // التأكد من تحميل مكتبة Chart.js
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.js library not loaded!');
+        return;
+    }
+
+    // تحويل البيانات لجافاسكريبت بشكل آمن
+    const pieData = {{ pie_data|tojson|safe }};
+    const barData = {{ bar_data|tojson|safe }};
+
+    // الرسم البياني الدائري
+    const pieCanvas = document.getElementById('pieChart');
+    if (pieCanvas) {
+        const pieCtx = pieCanvas.getContext('2d');
+        new Chart(pieCtx, {
+            type: 'pie',
+            data: {
+                labels: ['مكتملة', 'معلقة', 'متأخرة'],
+                datasets: [{
+                    data: [pieData.completed || 0, pieData.pending || 0, pieData.overdue || 0],
+                    backgroundColor: [
+                        '#28a745',
+                        '#ffc107', 
+                        '#dc3545'
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // الرسم البياني الشريطي
+    const barCanvas = document.getElementById('barChart');
+    if (barCanvas && barData && barData.length > 0) {
+        const barCtx = barCanvas.getContext('2d');
+        new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: barData.map(e => e.name || 'غير محدد'),
+                datasets: [{
+                    label: 'المهام المكتملة',
+                    data: barData.map(e => e.completed_tasks || 0),
+                    backgroundColor: '#007bff',
+                    borderColor: '#0056b3',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

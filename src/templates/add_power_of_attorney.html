@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة توكيل جديد - نظام الأرشيف المكتبي{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="mb-0">
+                <i class="bi bi-plus-circle me-3"></i>
+                إضافة توكيل جديد
+            </h1>
+            <p class="mb-0 mt-2">إضافة توكيل جديد إلى فهرس التوكيلات</p>
+        </div>
+        <a href="{{ url_for('power_of_attorney.index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>
+            العودة إلى الفهرس
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-file-earmark-text me-2"></i>
+                    بيانات التوكيل الجديد
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <!-- رقم التسلسل -->
+                        <div class="col-md-6 mb-3">
+                            <label for="sequence_number" class="form-label">
+                                <i class="bi bi-hash me-1"></i>
+                                رقم التسلسل <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" 
+                                   class="form-control" 
+                                   id="sequence_number" 
+                                   name="sequence_number" 
+                                   value="{{ next_sequence }}"
+                                   min="1" 
+                                   required>
+                            <div class="form-text">رقم التسلسل يجب أن يكون فريداً</div>
+                        </div>
+
+                        <!-- الاسم -->
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">
+                                <i class="bi bi-person me-1"></i>
+                                الاسم <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="name" 
+                                   name="name" 
+                                   placeholder="أدخل اسم الشخص"
+                                   required>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- اسم الشركة -->
+                        <div class="col-md-6 mb-3">
+                            <label for="company_name" class="form-label">
+                                <i class="bi bi-building me-1"></i>
+                                اسم الشركة
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="company_name" 
+                                   name="company_name" 
+                                   placeholder="أدخل اسم الشركة (اختياري)">
+                            <div class="form-text">يمكن ترك هذا الحقل فارغاً إذا لم يكن هناك شركة</div>
+                        </div>
+
+                        <!-- حالة التوكيل -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">
+                                <i class="bi bi-check-circle me-1"></i>
+                                حالة التوكيل
+                            </label>
+                            <div class="form-check">
+                                <input class="form-check-input" 
+                                       type="checkbox" 
+                                       id="has_power_of_attorney" 
+                                       name="has_power_of_attorney">
+                                <label class="form-check-label" for="has_power_of_attorney">
+                                    التوكيل متوفر لدينا
+                                </label>
+                            </div>
+                            <div class="form-text">ضع علامة إذا كان التوكيل موجود في المكتب</div>
+                        </div>
+                    </div>
+
+                    <!-- الملاحظات -->
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">
+                            <i class="bi bi-chat-text me-1"></i>
+                            ملاحظات
+                        </label>
+                        <textarea class="form-control" 
+                                  id="notes" 
+                                  name="notes" 
+                                  rows="3" 
+                                  placeholder="أدخل أي ملاحظات إضافية (اختياري)"></textarea>
+                    </div>
+
+                    <!-- أزرار الإجراءات -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('power_of_attorney.index') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle me-2"></i>
+                            إلغاء
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-2"></i>
+                            إضافة التوكيل
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-focus on name field when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('name').focus();
+});
+</script>
+{% endblock %}
+

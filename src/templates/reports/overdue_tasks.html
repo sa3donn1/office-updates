@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}المهام المتأخرة - نظام الأرشيف المكتبي{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="mb-0">
+                <i class="bi bi-exclamation-triangle me-3"></i>
+                المهام المتأخرة
+            </h1>
+            <p class="mb-0 mt-2">المهام التي لم تكتمل منذ أكثر من 30 يوماً</p>
+        </div>
+        <div class="btn-group">
+            <a href="{{ url_for('reports.export_excel', report_type='overdue_tasks') }}" 
+               class="btn btn-success">
+                <i class="bi bi-file-earmark-excel me-2"></i>
+                تصدير Excel
+            </a>
+            <a href="{{ url_for('reports.export_pdf', report_type='overdue_tasks') }}" 
+               class="btn btn-danger">
+                <i class="bi bi-file-earmark-pdf me-2"></i>
+                تصدير PDF
+            </a>
+            <a href="{{ url_for('reports.index') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-right me-2"></i>
+                العودة للتقارير
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- إحصائيات سريعة -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-danger text-white">
+            <div class="card-body text-center">
+                <i class="bi bi-exclamation-triangle fs-1"></i>
+                <h4>{{ overdue_tasks|length }}</h4>
+                <p class="mb-0">مهام متأخرة</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-warning text-white">
+            <div class="card-body text-center">
+                <i class="bi bi-calendar-x fs-1"></i>
+                <h4>30+</h4>
+                <p class="mb-0">يوم تأخير</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <i class="bi bi-clock-history fs-1"></i>
+                <h4>
+                    {% if overdue_tasks %}
+                        {{ ((overdue_tasks|map(attribute='created_at')|list|map('strftime', '%j')|map('int')|list|max) - (overdue_tasks|map(attribute='created_at')|list|map('strftime', '%j')|map('int')|list|min))|abs }}
+                    {% else %}
+                        0
+                    {% endif %}
+                </h4>
+                <p class="mb-0">متوسط التأخير</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-table me-2"></i>
+            قائمة المهام المتأخرة ({{ overdue_tasks|length }} مهمة)
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if overdue_tasks %}
+        <div class="alert alert-warning" role="alert">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>تنبيه:</strong> هذه المهام تحتاج إلى متابعة عاجلة لأنها متأخرة لأكثر من 30 يوماً.
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>اسم الشركة</th>
+                        <th>نوع الخدمة</th>
+                        <th>الموظف المسؤول</th>
+                        <th>تاريخ الإنشاء</th>
+                        <th>أيام التأخير</th>
+                        <th>مستوى الأولوية</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for task in overdue_tasks %}
+                    {% set days_overdue = (moment().date() - task.created_at.date()).days if task.created_at else 0 %}
+                    <tr>
+                        <td>
+                            <strong>{{ task.company_name }}</strong>
+                        </td>
+                        <td>{{ task.service_type }}</td>
+                        <td>
+                            {% if task.responsible_employee %}
+                                <span class="badge bg-primary">
+                                    {{ task.responsible_employee.name }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted">غير محدد</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ task.created_at.strftime("%Y-%m-%d") if task.created_at else "-" }}
+                        </td>
+                        <td>
+                            <span class="badge 
+                                {% if days_overdue > 90 %}bg-danger
+                                {% elif days_overdue > 60 %}bg-warning
+                                {% else %}bg-info{% endif %} fs-6">
+                                {{ days_overdue }} يوم
+                            </span>
+                        </td>
+                        <td>
+                            {% if days_overdue > 90 %}
+                                <span class="badge bg-danger">عاجل جداً</span>
+                            {% elif days_overdue > 60 %}
+                                <span class="badge bg-warning">عاجل</span>
+                            {% else %}
+                                <span class="badge bg-info">مهم</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- توزيع المهام المتأخرة حسب الموظف -->
+        <div class="mt-4">
+            <h6><i class="bi bi-pie-chart me-2"></i>توزيع المهام المتأخرة حسب الموظف:</h6>
+            <div class="row">
+                {% set employee_counts = {} %}
+                {% for task in overdue_tasks %}
+                    {% set employee_name = task.responsible_employee.name if task.responsible_employee else "غير محدد" %}
+                    {% set _ = employee_counts.update({employee_name: employee_counts.get(employee_name, 0) + 1}) %}
+                {% endfor %}
+                
+                {% for employee, count in employee_counts.items() %}
+                <div class="col-md-3 mb-2">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h6>{{ employee }}</h6>
+                            <span class="badge bg-danger fs-6">{{ count }} مهمة</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-check-circle text-success" style="font-size: 4rem;"></i>
+            <h5 class="mt-3 text-success">ممتاز! لا توجد مهام متأخرة</h5>
+            <p class="text-muted">جميع المهام تتم متابعتها في الوقت المناسب</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

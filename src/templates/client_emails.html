@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة إيميلات {{ client.name }} - نظام الأرشيف المكتبي{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="mb-0">
+                <i class="bi bi-envelope me-3"></i>
+                إدارة إيميلات العميل: {{ client.name }}
+            </h1>
+            <p class="mb-0 mt-2">عرض وإدارة الإيميلات وكلمات المرور الخاصة بالعميل</p>
+        </div>
+        <div>
+            <a href="{{ url_for('clients.index') }}" class="btn btn-outline-secondary me-2">
+                <i class="bi bi-arrow-left me-2"></i>
+                العودة للعملاء
+            </a>
+            {% if session.get('admin_id') %}
+            <a href="{{ url_for('clients.add_client_email', client_id=client.id) }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>
+                إضافة إيميل جديد
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Client Info Card -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <strong>اسم العميل:</strong>
+                <p class="mb-0">{{ client.name }}</p>
+            </div>
+            <div class="col-md-3">
+                <strong>النوع:</strong>
+                <p class="mb-0">
+                    {% if client.client_type == 'individual' %}
+                        <span class="badge bg-info">فرد</span>
+                    {% else %}
+                        <span class="badge bg-success">شركة</span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-md-3">
+                <strong>رقم التسجيل:</strong>
+                <p class="mb-0">{{ client.platform_registration_number }}</p>
+            </div>
+            <div class="col-md-3">
+                <strong>عدد الإيميلات:</strong>
+                <p class="mb-0">
+                    <span class="badge bg-primary">{{ emails|length }}</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Emails Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-envelope-fill me-2"></i>
+            قائمة الإيميلات ({{ emails|length }} إيميل)
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if emails %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>الإيميل</th>
+                        <th>كلمة المرور</th>
+                        <th>الوصف</th>
+                        <th>تاريخ الإضافة</th>
+                        {% if session.get('admin_id') %}
+                        <th>الإجراءات</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for email in emails %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>
+                            <i class="bi bi-envelope me-2 text-primary"></i>
+                            <strong>{{ email.email }}</strong>
+                        </td>
+                        <td>
+                            <div class="input-group input-group-sm" style="max-width: 200px;">
+                                <input type="password" class="form-control" value="{{ email.password }}" id="password-{{ email.id }}" readonly>
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword({{ email.id }})">
+                                    <i class="bi bi-eye" id="eye-{{ email.id }}"></i>
+                                </button>
+                            </div>
+                        </td>
+                        <td>
+                            {% if email.description %}
+                                <span class="badge bg-light text-dark">{{ email.description }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small class="text-muted">
+                                {% if email.created_at %}
+                                    {{ email.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                {% else %}
+                                    غير محدد
+                                {% endif %}
+                            </small>
+                        </td>
+                        {% if session.get('admin_id') %}
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('clients.edit_client_email', email_id=email.id) }}" 
+                                   class="btn btn-outline-warning" title="تعديل">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form action="{{ url_for('clients.delete_client_email', email_id=email.id) }}" method="post" style="display:inline;">
+                                    <button type="submit" class="btn btn-outline-danger" title="حذف"
+                                        onclick="return confirm('هل أنت متأكد من حذف هذا الإيميل؟')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-envelope-x text-muted" style="font-size: 4rem;"></i>
+            <h5 class="mt-3 text-muted">لا توجد إيميلات</h5>
+            <p class="text-muted">لم يتم إضافة أي إيميلات لهذا العميل بعد</p>
+            {% if session.get('admin_id') %}
+            <a href="{{ url_for('clients.add_client_email', client_id=client.id) }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>
+                إضافة إيميل جديد
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function togglePassword(emailId) {
+    const passwordField = document.getElementById('password-' + emailId);
+    const eyeIcon = document.getElementById('eye-' + emailId);
+    
+    if (passwordField.type === 'password') {
+        passwordField.type = 'text';
+        eyeIcon.className = 'bi bi-eye-slash';
+    } else {
+        passwordField.type = 'password';
+        eyeIcon.className = 'bi bi-eye';
+    }
+}
+</script>
+{% endblock %}
+

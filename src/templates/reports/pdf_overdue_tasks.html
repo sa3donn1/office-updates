@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تقرير المهام المتأخرة</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            direction: rtl;
+            text-align: right;
+            margin: 0;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #dc3545;
+            padding-bottom: 20px;
+        }
+        .header h1 {
+            color: #dc3545;
+            margin-bottom: 10px;
+        }
+        .generated-at {
+            text-align: left;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #495057;
+        }
+        .stats-row {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+        .stat-box {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #dc3545;
+        }
+        .priority-critical { color: #dc3545; font-weight: bold; }
+        .priority-urgent { color: #ffc107; font-weight: bold; }
+        .priority-important { color: #17a2b8; font-weight: bold; }
+        .alert {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>تقرير المهام المتأخرة</h1>
+        <p>نظام الأرشيف المكتبي</p>
+    </div>
+    
+    <div class="generated-at">
+        تم إنشاء التقرير في: {{ generated_at }}
+    </div>
+
+    {% if overdue_tasks %}
+    <div class="alert">
+        <strong>تنبيه:</strong> هذه المهام تحتاج إلى متابعة عاجلة لأنها متأخرة لأكثر من 30 يوماً.
+    </div>
+
+    <div class="stats-row">
+        <div class="stat-box">
+            <div class="stat-number">{{ overdue_tasks|length }}</div>
+            <div>مهام متأخرة</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">30+</div>
+            <div>يوم تأخير</div>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>اسم الشركة</th>
+                <th>نوع الخدمة</th>
+                <th>الموظف المسؤول</th>
+                <th>تاريخ الإنشاء</th>
+                <th>أيام التأخير</th>
+                <th>مستوى الأولوية</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for task in overdue_tasks %}
+            {% set days_overdue = (moment().date() - task.created_at.date()).days if task.created_at else 0 %}
+            <tr>
+                <td><strong>{{ task.company_name }}</strong></td>
+                <td>{{ task.service_type }}</td>
+                <td>
+                    {% if task.responsible_employee %}
+                        {{ task.responsible_employee.name }}
+                    {% else %}
+                        غير محدد
+                    {% endif %}
+                </td>
+                <td>{{ task.created_at.strftime("%Y-%m-%d") if task.created_at else "-" }}</td>
+                <td>{{ days_overdue }} يوم</td>
+                <td>
+                    {% if days_overdue > 90 %}
+                        <span class="priority-critical">عاجل جداً</span>
+                    {% elif days_overdue > 60 %}
+                        <span class="priority-urgent">عاجل</span>
+                    {% else %}
+                        <span class="priority-important">مهم</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div style="margin-top: 30px; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
+        <h3>مستويات الأولوية:</h3>
+        <ul>
+            <li><span class="priority-critical">عاجل جداً:</span> أكثر من 90 يوم تأخير</li>
+            <li><span class="priority-urgent">عاجل:</span> من 60 إلى 90 يوم تأخير</li>
+            <li><span class="priority-important">مهم:</span> من 30 إلى 60 يوم تأخير</li>
+        </ul>
+    </div>
+
+    {% else %}
+    <div style="text-align: center; padding: 50px; background-color: #d4edda; border-radius: 5px; color: #155724;">
+        <h3>ممتاز! لا توجد مهام متأخرة</h3>
+        <p>جميع المهام تتم متابعتها في الوقت المناسب</p>
+    </div>
+    {% endif %}
+</body>
+</html>
+
