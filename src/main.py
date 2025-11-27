@@ -15,6 +15,7 @@ from src.models.client import Client, Document
 from src.models.client_email import ClientEmail
 from src.models.power_of_attorney import PowerOfAttorney
 from src.models.task import Task
+from src.models.task_attachment import TaskAttachment
 from src.models.attendance import Attendance
 from src.routes.user import user_bp
 from src.routes.auth import auth_bp

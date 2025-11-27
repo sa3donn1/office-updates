@@ -1,11 +1,21 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
 from datetime import datetime, timedelta, date
+import uuid
+import os
+from werkzeug.utils import secure_filename
 from src.routes.auth import login_required
 from src.models.task import Task
+from src.models.task_attachment import TaskAttachment
 from src.models.employee import Employee
 from src.models.user import db
 
 tasks_bp = Blueprint("tasks", __name__)
+
+# Allowed upload extensions for task attachments
+ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'pdf', 'docx', 'xlsx'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @tasks_bp.route("/")
 @login_required
@@ -111,7 +121,8 @@ def edit(task_id):
         return redirect(url_for("tasks.index"))
     
     employees = Employee.query.all()
-    return render_template("edit_task.html", task=task, employees=employees)
+    attachments = TaskAttachment.query.filter_by(task_id=task.id).order_by(TaskAttachment.created_at.desc()).all()
+    return render_template("edit_task.html", task=task, employees=employees, attachments=attachments)
 
 @tasks_bp.route("/delete/<int:task_id>")
 @login_required
@@ -151,6 +162,89 @@ def toggle_completion(task_id):
         return redirect(url_for("tasks.index"))
     else:
         return redirect(url_for("tasks.employee_tasks"))
+
+
+@tasks_bp.route("/complete_with_attachment/<int:task_id>", methods=["POST"])
+@login_required
+def complete_with_attachment(task_id):
+    # Employee must be the owner
+    task = Task.query.get_or_404(task_id)
+    if "employee_id" in session and task.employee_id != session["employee_id"]:
+        flash("ليس لديك صلاحية تعديل هذه المهمة.", "danger")
+        return redirect(url_for("tasks.employee_tasks"))
+
+    # check file in request
+    if 'attachment' not in request.files:
+        flash('لم يتم تحديد ملف للرفع.', 'danger')
+        return redirect(url_for('tasks.employee_tasks'))
+
+    file = request.files['attachment']
+    notes = request.form.get('notes', None)
+
+    if file.filename == '':
+        flash('لم يتم اختيار ملف.', 'danger')
+        return redirect(url_for('tasks.employee_tasks'))
+
+    if file and allowed_file(file.filename):
+        orig_filename = secure_filename(file.filename)
+        name, ext = os.path.splitext(orig_filename)
+        unique_name = f"{int(datetime.utcnow().timestamp())}_{uuid.uuid4().hex}{ext}"
+        # prepare upload folder
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+        uploads_root = os.path.join(base_dir, 'static', 'uploads', 'tasks')
+        os.makedirs(uploads_root, exist_ok=True)
+        task_folder = os.path.join(uploads_root, str(task.id))
+        os.makedirs(task_folder, exist_ok=True)
+
+        file_path = os.path.join(task_folder, unique_name)
+        file.save(file_path)
+
+        # store relative path for serving
+        rel_path = os.path.relpath(file_path, base_dir)
+
+        # Save the original filename for display, but store the unique filename on disk
+        attachment = TaskAttachment(
+            task_id=task.id,
+            employee_id=session.get('employee_id'),
+            filename=orig_filename,
+            file_path=rel_path.replace('\\', '/'),
+            notes=notes
+        )
+        task.is_done = True
+        task.completion_date = datetime.utcnow()
+
+        db.session.add(attachment)
+        db.session.commit()
+
+        flash('تم رفع الملف وتم تحديد المهمة كمكتملة.', 'success')
+        return redirect(url_for('tasks.employee_tasks'))
+    else:
+        flash('صيغة الملف غير مدعومة. المسموح: jpg, png, pdf, docx, xlsx', 'danger')
+        return redirect(url_for('tasks.employee_tasks'))
+
+
+@tasks_bp.route("/<int:task_id>/attachments_json")
+@login_required
+def attachments_json(task_id):
+    # Only admins should call this for the admin tasks page
+    if "admin_id" not in session:
+        return jsonify({"error": "غير مصرح"}), 403
+
+    task = Task.query.get_or_404(task_id)
+    attachments = TaskAttachment.query.filter_by(task_id=task.id).order_by(TaskAttachment.created_at.desc()).all()
+    data = []
+    for a in attachments:
+        ext = os.path.splitext(a.file_path)[1].lstrip('.').lower() if a.file_path else ''
+        data.append({
+            'id': a.id,
+            'original_filename': a.filename,
+            'file_path': a.file_path,
+            'employee_name': a.employee.name if a.employee else None,
+            'upload_date': a.created_at.strftime('%Y-%m-%d %H:%M:%S') if a.created_at else None,
+            'extension': ext,
+            'notes': a.notes
+        })
+    return jsonify(data)
 
 @tasks_bp.route("/employee_tasks")
 @login_required

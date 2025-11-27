@@ -3,6 +3,7 @@ from .models.user import db
 from .models.admin import Admin
 from .models.client import Client
 from .models.task import Task
+from .models.task_attachment import TaskAttachment
 from .models.employee import Employee
 
 def init_db():

@@ -127,6 +127,17 @@
                         </td>
                         <td>
                             <div class="btn-group btn-group-sm">
+                                {% if employee_view %}
+                <button type="button" class="btn {% if task.is_done %}btn-outline-warning{% else %}btn-outline-success{% endif %}" 
+                    title="{% if task.is_done %}إلغاء الإنجاز{% else %}تحديد كمكتملة{% endif %}"
+                    data-task-id="{{ task.id }}" data-is-done="{% if task.is_done %}1{% else %}0{% endif %}" onclick="openCompleteModal(this)">
+                                    {% if task.is_done %}
+                                        <i class="bi bi-x-circle"></i>
+                                    {% else %}
+                                        <i class="bi bi-check-circle"></i>
+                                    {% endif %}
+                                </button>
+                                {% else %}
                                 <a href="{{ url_for("tasks.toggle_completion", task_id=task.id) }}" 
                                    class="btn {% if task.is_done %}btn-outline-warning{% else %}btn-outline-success{% endif %}" 
                                    title="{% if task.is_done %}إلغاء الإنجاز{% else %}تحديد كمكتملة{% endif %}">
@@ -136,14 +147,18 @@
                                         <i class="bi bi-check-circle"></i>
                                     {% endif %}
                                 </a>
+                                {% endif %}
                                 {% if not employee_view %}
+                                <button type="button" class="btn btn-outline-info" title="مرفقات" data-task-id="{{ task.id }}" onclick="openAttachmentModal(this)">
+                                    📎 مرفقات
+                                </button>
                                 <a href="{{ url_for("tasks.edit", task_id=task.id) }}" 
                                    class="btn btn-outline-warning" title="تعديل">
                                     <i class="bi bi-pencil"></i>
                                 </a>
                                 <a href="{{ url_for("tasks.delete", task_id=task.id) }}" 
                                    class="btn btn-outline-danger" title="حذف"
-                                   onclick="return confirm("هل أنت متأكد من حذف هذه المهمة؟")">
+                                   onclick="return confirm('هل أنت متأكد من حذف هذه المهمة؟')">
                                     <i class="bi bi-trash"></i>
                                 </a>
                                 {% endif %}
@@ -176,5 +191,172 @@
         document.getElementById('filter-form').submit();
     });
 </script>
+
+<!-- Modal for completing a task with attachment -->
+<div class="modal fade" id="completeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">إرسال مرفق وانهاء المهمة</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="complete-form" method="POST" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="attachment" class="form-label">رفع ملف (jpg, png, pdf, docx, xlsx) <span class="text-danger">*</span></label>
+                        <input type="file" class="form-control" id="attachment" name="attachment" accept=".jpg,.jpeg,.png,.pdf,.docx,.xlsx" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">ملاحظات (اختياري)</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">إرسال</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openCompleteModal(btnOrElem) {
+            var el = (typeof btnOrElem === 'object') ? btnOrElem : document.querySelector(btnOrElem);
+            var taskId = el.getAttribute('data-task-id');
+            var isDone = el.getAttribute('data-is-done');
+            // If already done, allow employee to un-complete via toggle route after confirmation
+            if (isDone === '1') {
+                if (confirm('هل تريد إلغاء تحديد المهمة كمكتملة؟')) {
+                    window.location.href = '/tasks/toggle/' + taskId;
+                }
+                return;
+            }
+
+            var form = document.getElementById('complete-form');
+            form.action = '/tasks/complete_with_attachment/' + taskId;
+            var modal = new bootstrap.Modal(document.getElementById('completeModal'));
+            modal.show();
+    }
+</script>
+
+    <!-- Attachments modal for admin (single modal used by tasks list) -->
+    <div class="modal fade" id="attachmentsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">مرفقات المهمة</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="taskAttachmentsContainer" class="row g-3">
+                        <!-- Cards will be injected here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const baseStatic = "{{ url_for('static', filename='') }}"; // e.g. /static/
+
+            function openAttachmentModal(elOrId) {
+                // accept either element with data-task-id or an id
+                let taskId = null;
+                if (typeof elOrId === 'object' && elOrId !== null) {
+                    taskId = elOrId.getAttribute('data-task-id');
+                } else {
+                    taskId = elOrId;
+                }
+                // fetch JSON data for attachments
+                fetch(`/tasks/${taskId}/attachments_json`)
+                .then(resp => {
+                    if (!resp.ok) throw new Error('خطأ في جلب المرفقات');
+                    return resp.json();
+                })
+                .then(data => {
+                    const container = document.getElementById('taskAttachmentsContainer');
+                    container.innerHTML = '';
+                    if (!Array.isArray(data) || data.length === 0) {
+                        container.innerHTML = '<div class="col-12 text-center py-3 text-muted">لا توجد مرفقات</div>';
+                    } else {
+                        data.forEach(att => {
+                            const fileUrl = baseStatic + att.file_path.replace(/^static\//, '');
+                            const ext = (att.extension || '').toLowerCase();
+                            const col = document.createElement('div');
+                            col.className = 'col-md-6';
+                            const card = document.createElement('div');
+                            card.className = 'card h-100';
+                            const cardBody = document.createElement('div');
+                            cardBody.className = 'card-body d-flex flex-column';
+
+                            const title = document.createElement('h6');
+                            title.textContent = att.original_filename;
+                            title.className = 'card-title';
+
+                            const meta = document.createElement('p');
+                            meta.className = 'card-text text-muted small mb-2';
+                            meta.textContent = `${att.employee_name || '-'} — ${att.upload_date || '-'} — ${ext}`;
+
+                            const preview = document.createElement('div');
+                            preview.className = 'mb-2';
+
+                            if (['jpg','jpeg','png'].includes(ext)) {
+                                const img = document.createElement('img');
+                                img.src = fileUrl;
+                                img.style.maxWidth = '100%';
+                                img.style.height = '180px';
+                                img.style.objectFit = 'cover';
+                                preview.appendChild(img);
+                            } else if (ext === 'pdf') {
+                                const embed = document.createElement('embed');
+                                embed.src = fileUrl;
+                                embed.type = 'application/pdf';
+                                embed.style.width = '100%';
+                                embed.style.height = '240px';
+                                preview.appendChild(embed);
+                            } else {
+                                // generic icon for docx/xlsx and others
+                                const icon = document.createElement('div');
+                                icon.className = 'd-flex align-items-center justify-content-center bg-light border';
+                                icon.style.height = '120px';
+                                icon.textContent = ext.toUpperCase() || 'FILE';
+                                preview.appendChild(icon);
+                            }
+
+                            const btnGroup = document.createElement('div');
+                            btnGroup.className = 'mt-auto d-flex gap-2';
+
+                            const dl = document.createElement('a');
+                            dl.className = 'btn btn-sm btn-primary';
+                            dl.href = fileUrl;
+                            dl.setAttribute('download', att.original_filename || 'attachment');
+                            dl.textContent = 'تحميل';
+
+                            btnGroup.appendChild(dl);
+
+                            cardBody.appendChild(title);
+                            cardBody.appendChild(meta);
+                            cardBody.appendChild(preview);
+                            cardBody.appendChild(btnGroup);
+
+                            card.appendChild(cardBody);
+                            col.appendChild(card);
+                            container.appendChild(col);
+                        });
+                    }
+
+                    const modal = new bootstrap.Modal(document.getElementById('attachmentsModal'));
+                    modal.show();
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('حدث خطأ أثناء جلب المرفقات');
+                });
+        }
+    </script>
 
 {% endblock %}
